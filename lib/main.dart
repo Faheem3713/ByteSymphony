@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:task/providers/auth_provider.dart';
+import 'package:task/views/screens/client_screen.dart';
+import 'package:task/views/screens/login_screen.dart';
 
-import 'package:task/core/theme/theme.dart';
+void main() => runApp(ProviderScope(child: MyApp()));
 
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
-}
-
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loggedIn = ref.watch(authNotifierProvider);
     return MaterialApp(
-      title: 'API Template',
-      theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
+      title: 'ByteSymphony Test',
+      initialRoute: loggedIn ? '/clients' : '/login',
+      routes: {
+        '/login': (_) => LoginScreen(),
+        '/clients': (_) => ClientsScreen(),
+      },
     );
   }
 }

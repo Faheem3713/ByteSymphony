@@ -1,26 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:task/services/auth_services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:task/core/network/dio_client.dart';
 
-final authRepositoryProvider = Provider((ref) => AuthServices());
-
-final loginProvider = StateNotifierProvider<LoginNotifier, AsyncValue<void>>((
-  ref,
-) {
-  return LoginNotifier(ref.watch(authRepositoryProvider));
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, bool>((ref) {
+  return AuthNotifier(ref);
 });
 
-class LoginNotifier extends StateNotifier<AsyncValue<void>> {
-  final AuthServices _repo;
-  LoginNotifier(this._repo) : super(const AsyncData(null));
+class AuthNotifier extends StateNotifier<bool> {
+  final Ref ref;
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+
+  AuthNotifier(this.ref) : super(false) {
+    _loadToken();
+  }
+
+  Future<void> _loadToken() async {
+    final token = await storage.read(key: 'jwt_token');
+    state = token != null && token.isNotEmpty;
+  }
 
   Future<void> login(String email, String password) async {
-    state = const AsyncLoading();
-    try {
-      await _repo.login(email, password);
-      state = const AsyncData(null);
-    } catch (e) {
-      state = AsyncError(e, StackTrace.current);
-    }
+    final api = ref.read(apiServiceProvider);
+    final token = await api.login(email, password);
+    await storage.write(key: 'jwt_token', value: token);
+    state = true;
+  }
+
+  Future<void> logout() async {
+    await storage.delete(key: 'jwt_token');
+    state = false;
   }
 }
